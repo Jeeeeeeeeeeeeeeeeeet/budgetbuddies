@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "581326620290",
+    "firebase_url": "https://bbbuddies-d3bb6-default-rtdb.firebaseio.com",
+    "project_id": "bbbuddies-d3bb6",
+    "storage_bucket": "bbbuddies-d3bb6.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:581326620290:android:2328fc8487eff5e98d969b",
+        "android_client_info": {
+          "package_name": "com.BudgetBuddies.budget_buddies"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "581326620290-mnr30qnf7pkbj4kl506neh7m6m55j51s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.BudgetBuddies.budget_buddies",
+            "certificate_hash": "3f9fbb53a2327723201a87d0cd95803d71513ea8"
+          }
+        },
+        {
+          "client_id": "581326620290-far3f0oiu8tokl2ql0j215jli45k3nf1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAG3gN3JvmY-RgZbk0XqB_0RlbJNuBOkBk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "581326620290-far3f0oiu8tokl2ql0j215jli45k3nf1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "581326620290-4d3r4ad1akjsvp3tsg8hlisg4bngiv8g.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.BudgetBuddies.budgetBuddies"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

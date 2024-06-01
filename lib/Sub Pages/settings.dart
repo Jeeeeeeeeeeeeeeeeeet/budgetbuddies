@@ -1,0 +1,92 @@
+import 'package:Budget_Buddies/Components/profile_form_field.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
+
+class Settings extends StatefulWidget {
+
+  const Settings({super.key});
+
+
+  @override
+  State<Settings> createState() => _SettingsState();
+}
+
+class _SettingsState extends State<Settings> {
+  final _username = TextEditingController();
+  final _pwd = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            children: [
+              const SizedBox(height: 20,),
+              const Text('Profile', style: TextStyle(
+                fontSize: 20,
+              )),
+              const SizedBox(height: 20,),
+              profileformfield(labelName: "Username", controller: _username, hintText: (FirebaseAuth.instance.currentUser!.displayName != null) ? '${FirebaseAuth.instance.currentUser!.displayName}' : 'Enter Username', obscureText: false,),
+              const SizedBox(height: 20,),
+              profileformfield(labelName: "Password", controller: _pwd, hintText: '********', obscureText: true,),
+              const SizedBox(height: 20,),
+              ElevatedButton(
+
+                  style: ButtonStyle(
+                    fixedSize: WidgetStateProperty.all(const Size(double.maxFinite, 75)),
+                    foregroundColor: WidgetStateProperty.all(Colors.white),
+                    backgroundColor: WidgetStateProperty.all(Colors.black),
+                    shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                    ),
+                  ),
+
+                  onPressed: () {
+                    DatabaseReference ref = FirebaseDatabase.instance.ref('users/${FirebaseAuth.instance.currentUser!.uid}/');
+                    if(_username.text.isNotEmpty) {
+                      FirebaseAuth.instance.currentUser!.updateDisplayName(_username.text);
+                      ref.update({
+                        'username': _username.text
+                      });
+                    }
+                    if(_pwd.text.isNotEmpty) {
+                      FirebaseAuth.instance.currentUser!.updatePassword(_pwd.text);
+                    }
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        if(_username.text.isNotEmpty || _pwd.text.isNotEmpty) {
+                          return const AlertDialog(
+                            contentPadding: EdgeInsets.all(16.0),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                            ),
+                            content: Text('Profile Updated'),
+                          );
+                        }
+                        else {
+                          return const AlertDialog(
+                            contentPadding: EdgeInsets.all(16.0),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                            ),
+                            content: Text('No changes have been made!'),
+                          );
+                        }
+                      },
+                    );
+                  },
+                  child: const Text('Update Profile')
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
