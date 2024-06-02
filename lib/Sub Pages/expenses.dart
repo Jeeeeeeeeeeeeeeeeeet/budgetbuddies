@@ -5,10 +5,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 
 class Expenses extends StatefulWidget {
-  const Expenses({super.key, required this.tripid});
+  const Expenses({Key? key, required this.tripid}) : super(key: key);
 
-
-  final tripid;
+  final String tripid;
 
   @override
   State<Expenses> createState() => _ExpensesState();
@@ -29,7 +28,7 @@ class _ExpensesState extends State<Expenses> {
   @override
   void initState() {
     super.initState();
-    code = '${widget.tripid}';
+    code = widget.tripid;
     ref = FirebaseDatabase.instance.ref('trip/$code/expenses');
     moneyRef = moneyRef.child('$code/used_money');
     fetchUsedMoney();
@@ -52,7 +51,8 @@ class _ExpensesState extends State<Expenses> {
         data.forEach((key, value) {
           if (value is Map<dynamic, dynamic>) {
             final timeList = Map<String, dynamic>.from(value);
-            timeList['time'] = DateFormat('dd-MM hh:mm a').format(DateTime.parse(value['date']));
+            timeList['time'] = DateFormat('dd-MM hh:mm a').format(
+                DateTime.parse(value['date']));
             timeList['id'] = key;
             tempList.add(timeList);
           }
@@ -74,13 +74,13 @@ class _ExpensesState extends State<Expenses> {
   }
 
   void updateUsedMoney(int money, String mode) {
-    if(mode == 'add') {
+    if (mode == 'add') {
       moneyRef.get().then((value) {
         String data = value.value.toString();
         money = int.parse(data) + money;
         moneyRef.set(money);
       });
-    }else if(mode == 'remove') {
+    } else if (mode == 'remove') {
       moneyRef.get().then((value) {
         String data = value.value.toString();
         money = int.parse(data) - money;
@@ -89,9 +89,9 @@ class _ExpensesState extends State<Expenses> {
     }
   }
 
-  void addExpense(amountController, categoryController, descriptionController) async {
+  void addExpense(amountController, categoryController,
+      descriptionController) async {
     DatabaseReference expenseRef = ref.push();
-
 
     try {
       expenseRef.set({
@@ -116,6 +116,43 @@ class _ExpensesState extends State<Expenses> {
     } catch (e) {
       Fluttertoast.showToast(
         msg: 'Error adding expense: $e',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+      );
+    }
+  }
+
+  void editExpense(String id, String newAmount, String newCategory,
+      String newDescription, int amount) async {
+    DatabaseReference expenseRef = ref.child(id);
+
+    try {
+
+      await expenseRef.update({
+        'amount': newAmount,
+        'category': newCategory,
+        'description': newDescription,
+      });
+
+      moneyRef.get().then((value) {
+        String data = value.value.toString();
+        num newMoney = int.parse(data.toString()) - amount + int.parse(newAmount);
+        moneyRef.set(newMoney);
+        Fluttertoast.showToast(msg: newMoney.toString());
+      });
+
+      Fluttertoast.showToast(
+        msg: 'Expense updated successfully!',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+      );
+
+      setState(() {
+        fetchData();
+      });
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: 'Error updating expense: $e',
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
       );
@@ -162,13 +199,99 @@ class _ExpensesState extends State<Expenses> {
             ),
           ),
           TextButton(onPressed: () {
-            if(_amountController.text.isEmpty || _categoryController.text.isEmpty || _descriptionController.text.isEmpty) {
+            if (_amountController.text.isEmpty ||
+                _categoryController.text.isEmpty ||
+                _descriptionController.text.isEmpty) {
               Fluttertoast.showToast(
                   msg: "Please fill all the fields!",
                   toastLength: Toast.LENGTH_SHORT,
                   gravity: ToastGravity.BOTTOM);
             } else {
-              addExpense(_amountController, _categoryController, _descriptionController);
+              addExpense(_amountController, _categoryController,
+                  _descriptionController);
+            }
+          }, child: const Text('Submit'))
+        ],
+      );
+    });
+  }
+
+  void showEditModal(String id, String amount, String category,
+      String description) {
+    _amountController.text = amount;
+    _categoryController.text = category;
+    _descriptionController.text = description;
+
+    showDialog(context: context, builder: (context) {
+      return AlertDialog(
+        title: const Text('Edit Expense'),
+        actions: [
+          TextField(
+            controller: _amountController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'Amount',
+            ),
+          ),
+          const SizedBox(height: 10,),
+          Container(
+            margin: const EdgeInsets.only(right: 50.0),
+            child: DropdownButtonFormField<String>(
+              value: null,
+              onChanged: (String? value) {
+                if (value != null) {
+                  _categoryController.text = value;
+                }
+              },
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Category',
+              ),
+              items: const [
+                DropdownMenuItem<String>(
+                  value: 'Hotel',
+                  child: Text('Hotel'),
+                ),
+                DropdownMenuItem<String>(
+                  value: 'Food',
+                  child: Text('Food'),
+                ),
+                DropdownMenuItem<String>(
+                  value: 'Travel',
+                  child: Text('Travel'),
+                ),
+                DropdownMenuItem<String>(
+                  value: 'Entertainment',
+                  child: Text('Entertainment'),
+                ),
+                DropdownMenuItem<String>(
+                  value: 'Others',
+                  child: Text('Others'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10,),
+          TextField(
+            controller: _descriptionController,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'Description',
+            ),
+          ),
+          TextButton(onPressed: () {
+            if (_amountController.text.isEmpty ||
+                _categoryController.text.isEmpty ||
+                _descriptionController.text.isEmpty) {
+              Fluttertoast.showToast(
+                  msg: "Please fill all the fields!",
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.BOTTOM);
+            } else {
+              editExpense(id, _amountController.text, _categoryController.text,
+                  _descriptionController.text, int.parse(amount.toString()));
+              Navigator.pop(context);
             }
           }, child: const Text('Submit'))
         ],
@@ -177,62 +300,62 @@ class _ExpensesState extends State<Expenses> {
   }
 
   @override
-  void dispose() {
-    _amountController.dispose();
-    _categoryController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _expenseList.isEmpty
           ? const Center(
-              child: Text('No expenses added yet!'),
-            )
+        child: Text('No expenses added yet!'),
+      )
           : ListView.builder(
-              itemCount: _expenseList.length,
-              itemBuilder: (context, index) {
-                final expense = _expenseList[index];
-                return Dismissible(
-                  key: Key(expense['id']),
-                  direction: DismissDirection.endToStart,
-                  onDismissed: (direction) {
-                    ref.child(expense['id']).remove();
-                    updateUsedMoney(int.parse(expense['amount']), 'remove');
-                    setState(() {
-                      _expenseList.removeAt(index);
-                    });
-                  },
-                  background: Container(
-                    padding: const EdgeInsets.only(right: 20.0),
-                    color: Colors.red,
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+        itemCount: _expenseList.length,
+        itemBuilder: (context, index) {
+          final expense = _expenseList[index];
+          return Dismissible(
+            key: Key(expense['id']),
+            direction: DismissDirection.endToStart,
+            onDismissed: (direction) {
+              ref.child(expense['id']).remove();
+              updateUsedMoney(int.parse(expense['amount']), 'remove');
+              setState(() {
+                _expenseList.removeAt(index);
+              });
+            },
+            background: Container(
+              padding: const EdgeInsets.only(right: 20.0),
+              color: Colors.red,
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children : [
-                            Icon(
-                              Icons.delete,
-                              color: Colors.white,
-                            ),
-                            Text('Delete', style: TextStyle(color: Colors.white),)
-                          ]
+                        Icon(
+                          Icons.delete,
+                          color: Colors.white,
                         ),
-                      ],
-                    ),
+                        Text('Delete', style: TextStyle(color: Colors.white),)
+                      ]
                   ),
-
-                  child: ListTile(
-                    title: Text('${expense['category']} - ${expense['description']}'),
-                    subtitle: Text('on ${expense['time']} - ${expense['done_by']}'),
-                    trailing: Text('₹${expense['amount']}', style: const TextStyle(fontSize: 20),),
-                  ),
+                ],
+              ),
+            ),
+            child: ListTile(
+              title: Text('${expense['category']} - ${expense['description']}'),
+              subtitle: Text('on ${expense['time']} - ${expense['done_by']}'),
+              trailing: Text(
+                '₹${expense['amount']}', style: const TextStyle(fontSize: 20),),
+              onTap: () {
+                showEditModal(
+                    expense['id'],
+                    expense['amount'],
+                    expense['category'],
+                    expense['description']
                 );
               },
             ),
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton(
         elevation: 3.0,
         onPressed: showModal,

@@ -1,5 +1,5 @@
-import 'package:Budget_Buddies/Sub%20Pages/expenses.dart';
-import 'package:Budget_Buddies/Sub%20Pages/reports.dart';
+import 'package:BudgetBuddies/Sub%20Pages/expenses.dart';
+import 'package:BudgetBuddies/Sub%20Pages/reports.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

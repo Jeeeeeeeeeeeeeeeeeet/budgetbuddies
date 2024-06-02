@@ -1,8 +1,9 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class Report extends StatefulWidget {
-  const Report({super.key, required this.tripid});
+  const Report({Key? key, required this.tripid}) : super(key: key);
 
   final String tripid;
 
@@ -11,8 +12,7 @@ class Report extends StatefulWidget {
 }
 
 class _ReportState extends State<Report> {
-
-  DatabaseReference ref = FirebaseDatabase.instance.ref('trip');
+  late DatabaseReference ref;
   List<Map<dynamic, dynamic>> _expenseList = [];
   late int budget = 0, usedmoney = 0;
   Map<String, int> userExpense = {};
@@ -20,30 +20,49 @@ class _ReportState extends State<Report> {
   @override
   void initState() {
     super.initState();
-    ref = ref.child(widget.tripid);
+    ref = FirebaseDatabase.instance.ref('trip').child(widget.tripid);
     fetchData();
-    fetchEntiretripData();
     _fetchExpenses();
   }
 
-  Future<void> _fetchExpenses() async {
-    final snapshot = await ref.child('expenses').get();
-    final expenses = snapshot.value as Map<dynamic, dynamic>;
+  void _fetchExpenses() {
+    ref.child('expenses').onValue.listen((event) {
+      final expensesData = event.snapshot.value;
+      if (expensesData != null && expensesData is Map<dynamic, dynamic>) {
+        final List<Map<dynamic, dynamic>> tempList = [];
+        final Map<String, int> tempUserExpense = {};
 
-    expenses.forEach((key, value) {
-      String user = value['done_by'];
-      int amount = int.parse(value['amount'].toString());
-      setState(() {
-        if(userExpense.containsKey(user)){
-          userExpense[user] = userExpense[user]! + amount;
-        }else{
-          userExpense[user] = amount;
-        }
-      });
+        expensesData.forEach((key, value) {
+          String user = value['done_by'];
+          int amount = int.parse(value['amount'].toString());
+
+          tempList.add({
+            'id': key,
+            'done_by': user,
+            'amount': amount,
+          });
+
+          tempUserExpense.update(
+            user,
+                (existingValue) => existingValue + amount,
+            ifAbsent: () => amount,
+          );
+        });
+
+        setState(() {
+          _expenseList = tempList;
+          userExpense = tempUserExpense;
+        });
+      } else {
+        setState(() {
+          _expenseList = [];
+          userExpense = {};
+        });
+      }
     });
   }
 
-  void fetchData(){
+  void fetchData() {
     ref.child('used_money').get().then((value) {
       String data = value.value.toString();
       setState(() {
@@ -58,49 +77,16 @@ class _ReportState extends State<Report> {
     });
   }
 
-  void fetchEntiretripData() {
-    ref.child('expenses').onValue.listen((event) {
-      final data = event.snapshot.value;
-      if (data != null && data is Map<dynamic, dynamic>) {
-        final List<Map<dynamic, dynamic>> tempList = [];
-        data.forEach((key, value) {
-          if (value is Map<dynamic, dynamic>) {
-            final timeList = Map<String, dynamic>.from(value);
-            timeList['id'] = key;
-            tempList.add(timeList);
-          }
-        });
-        setState(() {
-          _expenseList = tempList;
-        });
-      } else {
-        setState(() {
-          _expenseList = [];
-        });
-      }
-    });
-  }
-
-  bool isLow(){
+  bool isLow() {
     double per = 0.0;
     per = (usedmoney / budget) * 100;
-    if(per >= 90.0){
-      return true;
-    }
-    else{
-      return false;
-    }
+    return per >= 90.0;
   }
 
   Color getBudgetColor(int usedMoney, int budget) {
     double percentage = (usedMoney / budget) * 100;
     percentage = percentage.clamp(0.0, 100.0);
     return Color.lerp(Colors.blue, Colors.red, percentage / 100)!;
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   @override
@@ -113,11 +99,20 @@ class _ReportState extends State<Report> {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               const SizedBox(height: 25),
-              Text('Total Budget : $budget', style: TextStyle(fontSize: isLow() ? 20 : 30, color: getBudgetColor(usedmoney, budget)),),
+              Text(
+                'Total Budget : $budget',
+                style: TextStyle(fontSize: isLow() ? 20 : 30, color: getBudgetColor(usedmoney, budget)),
+              ),
               const SizedBox(height: 25,),
               Text('Money Left : ${budget - usedmoney}', style: const TextStyle(fontSize: 20)),
-              Text('Total Expense : $usedmoney', style: TextStyle(fontSize: isLow() ? 30 : 20, color: getBudgetColor(usedmoney, budget)),),
-              Text('Total Budget Percentage Used : ${((usedmoney / budget) * 100).toStringAsFixed(2)} %', style: TextStyle(fontSize: 20, color: getBudgetColor(usedmoney, budget)),),
+              Text(
+                'Total Expense : $usedmoney',
+                style: TextStyle(fontSize: isLow() ? 30 : 20, color: getBudgetColor(usedmoney, budget)),
+              ),
+              Text(
+                'Total Budget Percentage Used : ${((usedmoney / budget) * 100).toStringAsFixed(2)} %',
+                style: TextStyle(fontSize: 20, color: getBudgetColor(usedmoney, budget)),
+              ),
               const SizedBox(height: 25,),
               Table(
                 border: TableBorder.all(),
@@ -183,10 +178,36 @@ class _ReportState extends State<Report> {
                     ]
                 );
               }),
+              const SizedBox(height: 25,),
+              PieChart(
+                PieChartData(
+                  sections: _generatePieChartSections(),
+                  centerSpaceRadius: 60,
+                  sectionsSpace: 2,
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  List<PieChartSectionData> _generatePieChartSections() {
+    final totalAmount = usedmoney / userExpense.length;
+    return userExpense.entries.map((entry) {
+      final percentage = entry.value / totalAmount;
+      return PieChartSectionData(
+        color: Colors.primaries[userExpense.keys.toList().indexOf(entry.key) % Colors.primaries.length],
+        value: percentage,
+        title: '${percentage.toStringAsFixed(1)}%',
+        radius: 50,
+        titleStyle: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      );
+    }).toList();
   }
 }

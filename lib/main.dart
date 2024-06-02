@@ -13,10 +13,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       title: 'Budget Buddies',
-      home: SplashScreen(),
-      // color: Color(0xFFDCB7FF),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

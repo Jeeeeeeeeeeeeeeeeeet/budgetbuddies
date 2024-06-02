@@ -2,12 +2,14 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
-    id 'com.google.gms.google-services'
+    id 'com.google.gms.google-services' // Add this line for Google services plugin
 }
 
 dependencies {
-    implementation platform('com.google.firebase:firebase-bom:33.0.0')
+    implementation platform('com.google.firebase:firebase-bom:33.1.0')
     implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-auth' // Add this line for Firebase Authentication
+    implementation "com.google.android.gms:play-services-auth:21.2.0" // Add this line for Google Sign-In
 }
 
 def localProperties = new Properties()
