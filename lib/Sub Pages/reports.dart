@@ -1,6 +1,6 @@
 import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
 
 class Report extends StatefulWidget {
   const Report({Key? key, required this.tripid}) : super(key: key);
@@ -89,12 +89,29 @@ class _ReportState extends State<Report> {
     return Color.lerp(Colors.blue, Colors.red, percentage / 100)!;
   }
 
+  List<PieChartSectionData> showingSections() {
+    return List.generate(userExpense.length, (i) {
+      final host = userExpense.keys.toList()[i];
+      final value = userExpense.values.toList()[i];
+      return PieChartSectionData(
+        color: Colors.primaries[i],
+        value: value.toDouble(),
+        title: '$value by $host',
+        radius: 80.0,
+        titleStyle: const TextStyle(
+          fontSize: 20,
+          color: Color(0xffffffff),
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(10.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
@@ -179,35 +196,30 @@ class _ReportState extends State<Report> {
                 );
               }),
               const SizedBox(height: 25,),
-              PieChart(
-                PieChartData(
-                  sections: _generatePieChartSections(),
-                  centerSpaceRadius: 60,
-                  sectionsSpace: 2,
+              Container(
+                height: 300.0,
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(10.0),
+                  shape: BoxShape.rectangle,
+                ),
+                margin: const EdgeInsets.symmetric(vertical: 10.0),
+                child: PieChart(
+                  swapAnimationDuration: const Duration(seconds: 1),
+                  PieChartData(
+                    startDegreeOffset: -90.0,
+                    sections: showingSections(),
+                    borderData: FlBorderData(show: false),
+                    sectionsSpace: 0,
+                    centerSpaceRadius: 40,
+                  ),
                 ),
               ),
+              const SizedBox(height: 25,),
             ],
           ),
         ),
       ),
     );
-  }
-
-  List<PieChartSectionData> _generatePieChartSections() {
-    final totalAmount = usedmoney / userExpense.length;
-    return userExpense.entries.map((entry) {
-      final percentage = entry.value / totalAmount;
-      return PieChartSectionData(
-        color: Colors.primaries[userExpense.keys.toList().indexOf(entry.key) % Colors.primaries.length],
-        value: percentage,
-        title: '${percentage.toStringAsFixed(1)}%',
-        radius: 50,
-        titleStyle: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      );
-    }).toList();
   }
 }

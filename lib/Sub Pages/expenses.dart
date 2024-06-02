@@ -237,41 +237,59 @@ class _ExpensesState extends State<Expenses> {
           const SizedBox(height: 10,),
           Container(
             margin: const EdgeInsets.only(right: 50.0),
-            child: DropdownButtonFormField<String>(
-              value: null,
-              onChanged: (String? value) {
-                if (value != null) {
-                  _categoryController.text = value;
-                }
-              },
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Category',
-              ),
-              items: const [
-                DropdownMenuItem<String>(
-                  value: 'Hotel',
-                  child: Text('Hotel'),
-                ),
-                DropdownMenuItem<String>(
-                  value: 'Food',
-                  child: Text('Food'),
-                ),
-                DropdownMenuItem<String>(
-                  value: 'Travel',
-                  child: Text('Travel'),
-                ),
-                DropdownMenuItem<String>(
-                  value: 'Entertainment',
-                  child: Text('Entertainment'),
-                ),
-                DropdownMenuItem<String>(
-                  value: 'Others',
-                  child: Text('Others'),
-                ),
+            child: DropdownMenu(
+              dropdownMenuEntries: const [
+                DropdownMenuEntry(value: 'Hotel', label: 'Hotel'),
+                DropdownMenuEntry(value: 'Food', label: 'Food'),
+                DropdownMenuEntry(value: 'Travel', label: 'Travel'),
+                DropdownMenuEntry(value: 'Entertainment', label: 'Entertainment'),
+                DropdownMenuEntry(value: 'Others', label: 'Others'),
               ],
+              onSelected: (value) {
+                _categoryController.text = value!;
+              },
+              hintText: 'Category',
+              width: 283.5,
             ),
           ),
+          // Container(
+          //   margin: const EdgeInsets.only(right: 50.0),
+          //   child: DropdownButtonFormField<String>(
+          //     value: null,
+          //     onChanged: (String? value) {
+          //       if (value != null) {
+          //         _categoryController.text = value;
+          //       }
+          //     },
+          //     decoration: const InputDecoration(
+          //       border: OutlineInputBorder(),
+          //       hintText: 'Category',
+          //
+          //     ),
+          //     items: const [
+          //       DropdownMenuItem<String>(
+          //         value: 'Hotel',
+          //         child: Text('Hotel'),
+          //       ),
+          //       DropdownMenuItem<String>(
+          //         value: 'Food',
+          //         child: Text('Food'),
+          //       ),
+          //       DropdownMenuItem<String>(
+          //         value: 'Travel',
+          //         child: Text('Travel'),
+          //       ),
+          //       DropdownMenuItem<String>(
+          //         value: 'Entertainment',
+          //         child: Text('Entertainment'),
+          //       ),
+          //       DropdownMenuItem<String>(
+          //         value: 'Others',
+          //         child: Text('Others'),
+          //       ),
+          //     ],
+          //   ),
+          // ),
           const SizedBox(height: 10,),
           TextField(
             controller: _descriptionController,
@@ -310,50 +328,73 @@ class _ExpensesState extends State<Expenses> {
         itemCount: _expenseList.length,
         itemBuilder: (context, index) {
           final expense = _expenseList[index];
-          return Dismissible(
-            key: Key(expense['id']),
-            direction: DismissDirection.endToStart,
-            onDismissed: (direction) {
-              ref.child(expense['id']).remove();
-              updateUsedMoney(int.parse(expense['amount']), 'remove');
-              setState(() {
-                _expenseList.removeAt(index);
-              });
-            },
-            background: Container(
-              padding: const EdgeInsets.only(right: 20.0),
-              color: Colors.red,
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.delete,
-                          color: Colors.white,
-                        ),
-                        Text('Delete', style: TextStyle(color: Colors.white),)
-                      ]
-                  ),
-                ],
+          if(expense['done_by'] == FirebaseAuth.instance.currentUser!.displayName) {
+            return Dismissible(
+              key: Key(expense['id']),
+              direction: DismissDirection.endToStart,
+              onDismissed: (direction) {
+                ref.child(expense['id']).remove();
+                updateUsedMoney(int.parse(expense['amount']), 'remove');
+                setState(() {
+                  _expenseList.removeAt(index);
+                });
+              },
+              background: Container(
+                padding: const EdgeInsets.only(right: 20.0),
+                color: Colors.red,
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.delete,
+                            color: Colors.white,
+                          ),
+                          Text('Delete', style: TextStyle(color: Colors.white),)
+                        ]
+                    ),
+                  ],
+                ),
               ),
-            ),
-            child: ListTile(
+              child: ListTile(
+                title: Text('${expense['category']} - ${expense['description']}'),
+                subtitle: Text('on ${expense['time']} - ${expense['done_by']}'),
+                trailing: Text(
+                  '₹${expense['amount']}', style: const TextStyle(fontSize: 20),),
+                onTap: () {
+                  showEditModal(
+                      expense['id'],
+                      expense['amount'],
+                      expense['category'],
+                      expense['description']
+                  );
+                },
+              ),
+            );
+          }else{
+            return ListTile(
               title: Text('${expense['category']} - ${expense['description']}'),
               subtitle: Text('on ${expense['time']} - ${expense['done_by']}'),
               trailing: Text(
                 '₹${expense['amount']}', style: const TextStyle(fontSize: 20),),
-              onTap: () {
-                showEditModal(
-                    expense['id'],
-                    expense['amount'],
-                    expense['category'],
-                    expense['description']
-                );
-              },
-            ),
-          );
+              onTap: () => showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Permission Denied'),
+                  content: const Text('Only the person who added expense can edit/delete it.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                )
+              ),
+            );
+          }
+
         },
       ),
       floatingActionButton: FloatingActionButton(
